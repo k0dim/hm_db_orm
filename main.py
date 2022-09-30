@@ -1,7 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tkinter import messagebox as mb, Label, Entry, Tk, Button, Toplevel
-from modul.scripts import add_json, get_publisher_id, get_publisher_name, create_tab, drop_tab
+from modul.scripts import add_json, get_publisher_id, get_publisher_name,\
+                            create_tab, drop_tab#, test_conn
 
 
 class Search_id(Toplevel): # Окно: Поиск по ID
@@ -90,6 +91,7 @@ class App(Toplevel): # Окно с выбором действий
     def confirm_delete(self):
             message = "Вы уверены, что хотите закрыть это окно?"
             if mb.askyesno(message=message, parent=self):
+                self.session.close()
                 self.destroy()
 
 
@@ -106,23 +108,22 @@ class Authorization(Tk):
 
         # Ввод параметров для подключения к БД
         self.dbms = self.entry('СУБД:',0,1,1,1)
-        self.username = self.entry('Имя пользователя:',0,2,1,2)
+        self.database = self.entry('Имя БД:',0,2,1,2)
+        self.host = self.entry('Хост:',0,3,1,3)
+        self.port = self.entry('Порт:',0,4,1,4)
+        self.username = self.entry('Имя пользователя:',0,5,1,5)
         # self.password = self.entry('Укажите пароль пользователя:',0,3,1,3)
 
         # Пароль сормирован не через функцию entry() для скратия символов "*"
         lbl = Label(self, text='Пароль пользователя', font=("Arial Bold", 14))
-        lbl.grid(column=0, row=3)
+        lbl.grid(column=0, row=6)
         self.password = Entry(self, width=20, show="*")
-        self.password.grid(column=1, row=3)
-
-        self.host = self.entry('Хост:',0,4,1,4)
-        self.port = self.entry('Порт:',0,5,1,5)
-        self.database = self.entry('Имя БД:',0,6,1,6)
+        self.password.grid(column=1, row=6)
 
         # Автоподстановка
-        self.database.insert(0, 'postgres_hm')
+        self.database.insert(0, '')
         self.port.insert(0, '5432')
-        self.host.insert(0, '')
+        self.host.insert(0, 'localhost')
         self.password.insert(0, '')
         self.username.insert(0, '')
         self.dbms.insert(0, 'postgresql')
@@ -139,13 +140,23 @@ class Authorization(Tk):
         return entry
 
     def click(self): # Функция при нажатии кнопки
-        DSM = f'{auth.dbms.get()}://{auth.username.get()}:{auth.password.get()}@{auth.host.get()}:{auth.port.get()}/{auth.database.get()}'
+        dbms = auth.dbms.get()
+        username = auth.username.get()
+        password = auth.password.get()
+        host = auth.host.get()
+        port = auth.port.get()
+        database = auth.database.get()
+        DSM = f'{dbms}://{username}:{password}@{host}:{port}/{database}'
         engine = create_engine(DSM)
         Session = sessionmaker(bind=engine)
         session = Session()
-        app = App(self, session, engine)
-        app.grab_set()
-
+        # test_conn(session)
+        try:
+            app = App(self, session, engine)
+            app.grab_set()
+        except:
+            mb.showerror('Ошибка', '''Не удалось подключиться к БД
+            Проверьте заполняемые поля''')
 
 if __name__ == '__main__':
     auth = Authorization()
