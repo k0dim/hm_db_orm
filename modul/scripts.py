@@ -51,3 +51,8 @@ def create_tab(engine):
 def drop_tab(engine):
     drop_tables(engine)
     mb.showinfo('Выполненно', 'Таблицы удалены')
+
+# Тест на подключение
+def test_conn(session):
+    q = session.query(Publisher)
+    return q
